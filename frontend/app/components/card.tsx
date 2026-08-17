@@ -29,28 +29,32 @@ interface CardProps {
 export default function Card({ card, faded, onClicked }: CardProps) {
     if (card == null) return (<></>)
     return (
-        <div className={`relative h-full aspect-square rounded-full ${faded ? 'bg-white' : 'bg-white'}`}>
+        <div className="relative h-full aspect-square overflow-visible">
+            <div className={`absolute inset-0 rounded-full -z-10 ${faded ? 'bg-white' : 'bg-white'}`} />
+
             {card.symbols.map((num, idx) => (
                 <div 
-                key={idx}
-                onClick={() => {
-                    if (onClicked) {
-                        onClicked(num);
-                    }
-                }}
-                className="flex absolute z-5 aspect-square items-center justify-center"
-                style={{ 
-                    bottom:objectDictionary[idx+1].bottom, 
-                    left:objectDictionary[idx+1].left, 
-                    transform: `translate(-50%, 50%) rotate(${objectDictionary[idx+1].rotation})`,
-                    width: `${card.sizes[idx]}%`
-                }}>
+                    key={idx}
+                    onClick={() => {
+                        if (onClicked) {
+                            onClicked(num);
+                        }
+                    }}
+                    className="flex absolute z-10 aspect-square items-center justify-center overflow-visible"
+                    style={{ 
+                        bottom: objectDictionary[idx+1].bottom, 
+                        left: objectDictionary[idx+1].left, 
+                        transform: `translate(-50%, 50%) rotate(${objectDictionary[idx+1].rotation})`,
+                        width: `${card.sizes[idx]}%`
+                    }}
+                >
                     <Image 
                         src={symbols[num]}
                         fill
                         sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-contain rounded-full p-[5%] overflow-visible"
-                        alt={symbols[num]} />
+                        className="object-contain p-[5%]" 
+                        alt={symbols[num]} 
+                    />
                 </div>
             ))}
         </div>
