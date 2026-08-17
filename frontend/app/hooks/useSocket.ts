@@ -1,6 +1,8 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "ws://localhost:4000"
+
 export function useSocket() {
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
   const [room, setRoom] = useState("");
@@ -14,7 +16,7 @@ export function useSocket() {
   const player = players.filter((p) => p.name == name).at(0)!;
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:4000");
+    const ws = new WebSocket(API_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
