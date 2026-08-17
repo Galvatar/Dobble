@@ -15,10 +15,14 @@ export default function Lobby() {
         ws!.send("kick|"+player.name)
     }
 
+    function handleStart(mode: number) {
+        ws!.send("game|"+mode)
+    }
+
     return (
         <div className="flex flex-col flex-1 items-center justify-center bg-yellow-300 font-sans gap-3 p-5">
             {me && me.host &&
-                <HostPanel />
+                <HostPanel onStart={(s) => handleStart(s)} />
             }
             <h2 className="text-black font-bold uppercase">
                 {connected}/{players.length} connected

@@ -1,3 +1,4 @@
+import Game from "./game.js";
 import Player from "./player.js";
 
 class Room {
@@ -5,10 +6,13 @@ class Room {
     #mode;
     #connections = new Map();
     #deleteRoom;
+    /** @type {Game} */
+    #game;
 
     constructor(name, deleteRoom) {
         this.#name = name;
         this.#deleteRoom = deleteRoom;
+        this.#game = null;
     }
 
     join(ws) {
@@ -57,6 +61,11 @@ class Room {
         const command = parts[0].trim();
         const payload = parts[1].trim();
 
+        if (this.#game != null) {
+            this.handleGame(ws, command, payload);
+            return;
+        }
+
         if (command == "send") {
             this.broadcast(payload);
         } else if (command == "name") {
@@ -71,7 +80,56 @@ class Room {
                 }
             }
             this.notifyLobby()
+        } else if (command == "game") {
+            this.startGame(payload);
         }
+    }
+
+    startGame(payload) {
+        this.#game = new Game(payload)
+        const deck = this.#game.getDeck();
+        this.broadcast(`deck|${JSON.stringify(deck)}`);
+        for (const [ws, player] of this.#connections) {
+            player.card = this.#game.getNext(-1);
+            this.#connections.set(ws, player);
+        }
+        this.notifyLobby()
+    }
+
+    /**
+     * 
+     * @param {string} command 
+     * @param {string} payload 
+     */
+    handleGame(ws, command, payload) {
+        if (Number(command) == NaN) return;
+        const pile = Number(command)
+        const symbol = Number(payload)
+        var player = this.#connections.get(ws);
+
+        if (this.#game.isPileTop(pile)) {
+            const playerCardIdx = player.card;
+            if (this.#game.validMatch(playerCardIdx, symbol)) {
+                player.score++;
+                const newCard = this.#game.getNext(playerCardIdx);
+                if (newCard == -1) {
+                    this.handleGameOver();
+                    return;
+                }
+                player.card = newCard;
+                this.broadcast(`pile|${this.#game.getPile()}`);
+            } else {
+                player.score--;
+            }
+            this.#connections.set(ws, player);
+            this.notifyLobby();
+        }
+    }
+
+    handleGameOver() {
+        this.notifyLobby();
+        this.broadcast("gameOver|");
+        this.#game == null;
     }
 
     notifyLobby() {

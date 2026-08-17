@@ -58,3 +58,6 @@ Backend returns
 ```bash
 user:user_name
 ```
+
+during game
+user sends pileIdx|symbol

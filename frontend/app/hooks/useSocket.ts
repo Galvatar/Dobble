@@ -5,6 +5,8 @@ export function useSocket() {
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
   const [room, setRoom] = useState("");
   const [name, setName] = useState("");
+  const [pile, setPile] = useState(0);
+  const [deck, setDeck] = useState([] as Card[]);
   const [players, setPlayers] = useState([] as Player[]);
   const wsRef = useRef<WebSocket | null>(null);
   const router = useRouter();
@@ -57,9 +59,25 @@ export function useSocket() {
     } else if (command == "kick") {
       resetVars();
       router.push('/');
+    } else if (command == "deck") {
+      setDeck(JSON.parse(payload));
+      router.push('/game');
+    } else if (command == "pile") {
+      setPile(Number(payload));
+    } else if (command == "gameOver") {
+      router.push('/lobby');
     }
     console.log(message);
   };
 
-  return { ws: wsRef.current, players, player, room, name, status, sendMessage };
+  return { 
+    ws: wsRef.current,
+    pile, 
+    deck,
+    players, 
+    player, 
+    room, 
+    name, 
+    status, 
+    sendMessage };
 }

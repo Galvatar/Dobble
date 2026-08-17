@@ -3,16 +3,10 @@ interface Player {
     score: number,
     connected: boolean,
     host: boolean,
+    card: number,
 }
 
 interface Card {
-
-}
-
-interface Symbol {
-    id: number,
-    bottom: number,
-    left: number,
-    size: number,
-    angle: number
+    symbols: number[]
+    sizes: number[]
 }

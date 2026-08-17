@@ -1,14 +1,14 @@
 class Player {
     #ws;
-    #score;
     #host;
-    // name, connected
+    // score, name, connected, card
 
     constructor(ws) {
         this.#ws = ws;
-        this.#score = 0;
+        this.score = 0;
         this.#host = false;
         this.connected = true;
+        this.card = 0;
     }
 
     setWs(ws) {
@@ -28,14 +28,6 @@ class Player {
         return this.#host;
     }
 
-    addPoint() {
-        this.#score++;
-    }
-
-    getScore() {
-        return this.#score;
-    }
-
     send(message) {
         this.#ws.send(message);
     }
@@ -44,8 +36,9 @@ class Player {
         return {
             name: this.name,
             host: this.#host,
-            score: this.#score, 
+            score: this.score, 
             connected: this.connected,
+            card: this.card,
         };
     }
 }
