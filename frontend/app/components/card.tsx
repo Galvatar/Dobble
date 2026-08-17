@@ -27,6 +27,7 @@ interface CardProps {
 }
 
 export default function Card({ card, faded, onClicked }: CardProps) {
+    if (card == null) return (<></>)
     return (
         <div className={`relative h-full aspect-square rounded-full ${faded ? 'bg-white' : 'bg-white'}`}>
             {card.symbols.map((num, idx) => (

@@ -16,13 +16,13 @@ export default function GameScreen() {
                 <h1 className="font-bold text-lg text-black">
                     Game Pile ▼
                 </h1>
-                <Card card={deck[pile]} faded={true} />
+                <Card card={deck[pile ?? 0]} faded={true} />
             </div>
             <div className="flex flex-col gap-1 items-center h-full">
                 <h1 className="font-bold text-lg text-black">
                     Your Hand ▼
                 </h1>
-                <Card card={deck[player.card]} faded={false} onClicked={(s) => handleClick(s)} />
+                <Card card={deck[player?.card ?? 0]} faded={false} onClicked={(s) => handleClick(s)} />
             </div>
         </div>
     )
