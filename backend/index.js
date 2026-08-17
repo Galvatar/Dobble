@@ -10,14 +10,14 @@ const wss = new WebSocketServer({ server }); // Attach WebSocket server to HTTP 
 const rooms = new Map();
 
 function handleMessage(message, ws) {
-    const parts = message.toString().split(':');
+    const parts = message.toString().split('|');
     if (parts[0] == "join") {
-        if (!rooms.has(parts[1])) {
-            rooms.set(parts[1], new Room(parts[1]));
-            console.log("Created room");
-        }
-        rooms.get(parts[1]).join(ws);
-        console.log("Joined room");
+      if (!rooms.has(parts[1])) {
+        rooms.set(parts[1], new Room(parts[1], (roomName) => rooms.delete(roomName)));
+        console.log("Created room");
+      }
+      rooms.get(parts[1]).join(ws);
+      console.log("Joined room");
     }
 }
 

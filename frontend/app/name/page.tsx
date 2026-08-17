@@ -2,15 +2,15 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { useSharedSocket } from "./components/socketContext";
+import { useSharedSocket } from "../components/socketContext";
 
-export default function Home() {
+export default function Name() {
   const [input, setInput] = useState("");
   const socket = useSharedSocket();
 
   function handleSubmit() {
     const submit = input.trim();
-    if (submit.length > 0) socket.sendMessage(`join|${submit}`);
+    if (submit.length > 0) socket.sendMessage(`name|${submit}`);
     setInput("");
   }
 
@@ -30,14 +30,14 @@ export default function Home() {
           }
         }}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Room name"
+        placeholder="Your name"
         className="bg-white font-medium border-2 rounded-md border-black outline-none text-black p-2"
       />
       <button
         className="bg-purple-300 p-3 font-bold rounded-lg border-2 border-black text-black"
         onClick={() => handleSubmit()}
       >
-        JOIN/CREATE
+        SET NAME
       </button>
     </div>
   );

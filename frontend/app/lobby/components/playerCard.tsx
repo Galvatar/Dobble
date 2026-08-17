@@ -1,0 +1,40 @@
+import { useState } from "react";
+
+interface PlayerCardProps {
+    player: Player
+    isHost: boolean
+    onKick(player: Player): void 
+}
+
+export default function PlayerCard({ player, isHost, onKick }: PlayerCardProps) {
+    const [moved, setMoved] = useState(false);
+
+    return (
+        <div className="flex">
+            <div 
+                onClick={() => {
+                    if (!player.host && isHost) {
+                        setMoved(!moved);
+                    }
+                }}
+                className="flex w-full justify-between items-center border-2 border-black rounded-md p-1 bg-white text-black">
+                <div className="flex gap-1 items-center">
+                    <b className={`text-lg ${player.connected ? '' : 'line-through'}`}>{player.name}</b>
+                    {player.host && 
+                    <svg className="text-yellow-300" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-160v-80h560v80H200Zm0-140-51-321q-2 0-4.5.5t-4.5.5q-25 0-42.5-17.5T80-680q0-25 17.5-42.5T140-740q25 0 42.5 17.5T200-680q0 7-1.5 13t-3.5 11l125 56 125-171q-11-8-18-21t-7-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820q0 15-7 28t-18 21l125 171 125-56q-2-5-3.5-11t-1.5-13q0-25 17.5-42.5T820-740q25 0 42.5 17.5T880-680q0 25-17.5 42.5T820-620q-2 0-4.5-.5t-4.5-.5l-51 321H200Z"/>
+                    </svg>}
+                </div>
+                <b className="text-lg">{player.score}</b>
+            </div>
+            <button 
+                onClick={() => {
+                    if (!player.host && isHost) {
+                        onKick(player);
+                    }
+                }}
+                className={`rounded-md border-red-500 text-red-900 font-bold bg-red-300 overflow-hidden ${moved ? 'w-15 border-2 ml-1' : 'w-0 border-0'} transition-all`}>
+                KICK
+            </button>
+        </div>
+    )
+}

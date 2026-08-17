@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react";
-import { useSocket } from "../hooks/useSocket";
+import { useSharedSocket } from "./socketContext";
 
 export default function Connection() {
-    const { status, room } = useSocket();
+    const { status, room, name } = useSharedSocket();
 
     return (
         <div className="flex justify-between bg-yellow-300 p-3">
@@ -19,6 +19,10 @@ export default function Connection() {
                 Offline
             </span>
             }
+            {name != "" && 
+            <span className="font-bold text-black">
+                {name}
+            </span>}
             {room != "" && 
             <span className="font-bold text-black">
                 Room: {room}
