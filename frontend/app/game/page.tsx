@@ -11,7 +11,7 @@ export default function GameScreen() {
     }
 
     return (
-        <div className="flex flex-col h-screen items-center bg-yellow-300 font-sans gap-5">
+        <div className="flex flex-col h-screen items-center bg-yellow-300 font-sans gap-5 pb-3">
             <div className="flex flex-col gap-1 items-center h-full">
                 <h1 className="font-bold text-lg text-black">
                     Game Pile ▼

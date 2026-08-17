@@ -38,7 +38,7 @@ export default function Card({ card, faded, onClicked }: CardProps) {
                         onClicked(num);
                     }
                 }}
-                className="flex absolute z-5 aspect-square rounded-full items-center justify-center"
+                className="flex absolute z-5 aspect-square items-center justify-center"
                 style={{ 
                     bottom:objectDictionary[idx+1].bottom, 
                     left:objectDictionary[idx+1].left, 
@@ -49,7 +49,7 @@ export default function Card({ card, faded, onClicked }: CardProps) {
                         src={symbols[num]}
                         fill
                         sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-contain rounded-full p-1 overflow-visible"
+                        className="object-contain rounded-full p-[5%] overflow-visible"
                         alt={symbols[num]} />
                 </div>
             ))}
