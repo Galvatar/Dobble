@@ -21,11 +21,11 @@ export function useSocket() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      // router.push('/');
+      router.push('/');
       setStatus("connected");
     }
     ws.onclose = () => {
-      // router.push('/');
+      router.push('/');
       resetVars();
       setStatus("disconnected");
     }
