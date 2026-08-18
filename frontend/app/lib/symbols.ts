@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 export const symbols = [
   "/symbols/anchor.png",
   "/symbols/apple.png",
@@ -57,3 +59,12 @@ export const symbols = [
   "/symbols/yin_yang.png",
   "/symbols/zebra.png"
 ];
+
+export function usePreloadImages(imagePaths: string[]) {
+  useEffect(() => {
+    imagePaths.forEach((path) => {
+      const img = new Image();
+      img.src = path; // Triggers immediate HTTP fetch & browser caching
+    });
+  }, [imagePaths]);
+}

@@ -28,6 +28,7 @@ interface CardProps {
 
 export default function Card({ card, faded, onClicked }: CardProps) {
     if (card == null) return (<></>)
+
     return (
         <div className="relative h-full aspect-square overflow-visible">
             <div className={`absolute inset-0 rounded-full ${faded ? 'bg-white' : 'bg-white'}`} />
