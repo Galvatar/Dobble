@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "ws://localhost:4000"
 
@@ -14,17 +14,18 @@ export function useSocket() {
   const router = useRouter();
 
   const player = players.filter((p) => p.name == name).at(0)!;
+  const cardsPlayed = Math.max(Math.max(...players.map((p) => p.card)), pile)+1;
 
   useEffect(() => {
     const ws = new WebSocket(API_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      router.push('/');
+      // router.push('/');
       setStatus("connected");
     }
     ws.onclose = () => {
-      router.push('/');
+      // router.push('/');
       resetVars();
       setStatus("disconnected");
     }
@@ -74,6 +75,7 @@ export function useSocket() {
 
   return { 
     ws: wsRef.current,
+    cardsPlayed,
     pile, 
     deck,
     players, 

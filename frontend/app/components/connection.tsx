@@ -7,7 +7,7 @@ export default function Connection() {
     const { status, room, name } = useSharedSocket();
 
     return (
-        <div className="flex justify-between bg-yellow-300 p-3">
+        <div className="flex justify-between bg-white p-2 border-b-2 border-black">
             {status == "connected" ?
             <span className="flex items-center gap-1 font-bold text-green-500">
                 <span className="bg-green-500 rounded-full h-3 w-3" />
