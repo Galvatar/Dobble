@@ -35,7 +35,7 @@ export default function Card({ card, faded, onClicked }: CardProps) {
 
             {card.symbols.map((num, idx) => (
                 <div 
-                    key={idx}
+                    key={`'card'}-${idx}-${num}`}
                     onClick={() => {
                         if (onClicked) {
                             onClicked(num);
