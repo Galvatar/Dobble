@@ -49,12 +49,10 @@ export default function Card({ card, faded, onClicked }: CardProps) {
                         width: `${card.sizes[idx]}%`
                     }}
                 >
-                    <Image 
+                    <img 
                         src={symbols[num]}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-contain p-[5%]" 
-                        alt={symbols[num]} 
+                        alt=""
+                        className="w-full h-full object-contain p-[5%]" 
                     />
                 </div>
             ))}
