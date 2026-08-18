@@ -58,7 +58,9 @@ export function useSocket() {
       setName(payload);
       router.push('/lobby');
     } else if (command == "lobby") {
-      setPlayers(JSON.parse(payload));
+      var lobby: Player[] = JSON.parse(payload);
+      lobby.sort((a,b) => b.score - a.score);
+      setPlayers(lobby);
     } else if (command == "kick") {
       resetVars();
       router.push('/');

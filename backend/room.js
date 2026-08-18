@@ -172,22 +172,6 @@ class Room {
         return name;
     }
 
-    /**
-     * @param {string} name 
-     */
-    checkName(name) {
-        var count = 0;
-        const size = name.length;
-        for (const [ws, player] of this.#connections) {
-            if (player.name != null) {
-                if (player.name.substring(0, size) === name) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
     broadcast(message) {
         for (const [ws, player] of this.#connections) {
             player.send(message)
