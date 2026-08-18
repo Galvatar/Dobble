@@ -30,7 +30,7 @@ export default function Card({ card, faded, onClicked }: CardProps) {
     if (card == null) return (<></>)
     return (
         <div className="relative h-full aspect-square overflow-visible">
-            <div className={`absolute inset-0 rounded-full -z-10 ${faded ? 'bg-white' : 'bg-white'}`} />
+            <div className={`absolute inset-0 rounded-full ${faded ? 'bg-white' : 'bg-white'}`} />
 
             {card.symbols.map((num, idx) => (
                 <div 
