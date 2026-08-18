@@ -60,11 +60,17 @@ export const symbols = [
   "/symbols/zebra.png"
 ];
 
+const imageRamCache = new Map<string, HTMLImageElement>();
+
 export function usePreloadImages(imagePaths: string[]) {
   useEffect(() => {
     imagePaths.forEach((path) => {
-      const img = new Image();
-      img.src = path; // Triggers immediate HTTP fetch & browser caching
+      if (!imageRamCache.has(path)) {
+        const img = new Image();
+        img.src = path;
+        img.decode?.().catch(() => {});
+        imageRamCache.set(path, img); // 👈 Keeps reference alive in RAM
+      }
     });
   }, [imagePaths]);
 }

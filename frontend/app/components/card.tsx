@@ -52,6 +52,7 @@ export default function Card({ card, faded, onClicked }: CardProps) {
                     <img 
                         src={symbols[num]}
                         alt=""
+                        decoding="sync"
                         className="w-full h-full object-contain p-[5%]" 
                     />
                 </div>
