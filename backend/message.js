@@ -20,9 +20,7 @@ class Message {
      * @returns {string}
      */
     getFirstPlayer() {
-        for (const player of this.players) {
-            return player;
-        }
+        return this.players.values().next().value;
     }
 
     /**

@@ -44,7 +44,7 @@ export class WebSocketHandler {
         var resp = undefined;
         if (message.command == ClientAction.CLIENT_DISCONNECT) {
             this.#sessionManager.handleMessage(message);
-            this.#roomManager.handleClientMessage(message);
+            resp = this.#roomManager.handleClientMessage(message);
         } else if (message.command == ClientAction.SET_NAME) {
             /** @type {Message} */
             resp = this.#sessionManager.handleMessage(message);

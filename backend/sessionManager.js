@@ -42,7 +42,7 @@ class SessionManager {
         var count = 0;
         var validName = name;
         while (this.#players.has(validName)) {
-            if (this.#players.get(name) == Status.OFFLINE) break;
+            if (this.#players.get(validName) == Status.OFFLINE) break;
             count++;
             validName = name + count;
         }

@@ -57,15 +57,35 @@ export class RoomManager extends EventEmitter {
             const room = this.joinOrCreateRoom(message);
             this.#rooms.set(message.payload, room);
         } else if (message.command == ClientAction.KICK_PLAYER) {
-            this.#playerRoom.delete(message.getFirstPlayer());
+            this.#playerRoom.delete(message.payload);
         }
         /** @type {Room} */
         const room = this.fetchPlayerRoom(message.getFirstPlayer());
         if (room != null || room != undefined) {
+            if (message.command == ClientAction.CLIENT_DISCONNECT) {
+                const players = room.handleClientMessage(message);
+                this.handleRoomCleanup(players);
+                return null;
+            }
             const resp = room.handleClientMessage(message);
             return resp;
         } else {
             return null;
+        }
+    }
+
+    /**
+     * 
+     * @param {string[]} players 
+     */
+    handleRoomCleanup(players) {
+        var connected = false;
+        for (const player of players) {
+            connected = connected || this.#sessionManager.isConnected(player);
+        }
+        if (!connected) {
+            const room = this.#playerRoom.get(players[0])
+            this.#rooms.delete(room);
         }
     }
 

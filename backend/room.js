@@ -44,16 +44,21 @@ class Room {
             resp = this.#game.handleMessage(message);
         } else if (message.command == ClientAction.SUBMIT_SYMBOL) {
             resp = this.#game.handleMessage(message);
-        }
-        if (resp.command == ServerAction.GAME_OVER) {
-            const scores = JSON.parse(resp.payload);
-            for (const obj of scores) {
-                const newScore = this.#players.get(obj.player)+obj.score
-                this.#players.set(obj.player, newScore);
-            }
+        } else if (message.command == ClientAction.CLIENT_DISCONNECT) {
             this.updateLobby();
+            return [...this.#players.keys()]
         }
-        if (resp != null || resp != undefined) return resp;
+        if (resp != null || resp != undefined) {
+            if (resp.command == ServerAction.GAME_OVER) {
+                const scores = JSON.parse(resp.payload);
+                for (const obj of scores) {
+                    const newScore = this.#players.get(obj.player)+obj.score
+                    this.#players.set(obj.player, newScore);
+                }
+                this.updateLobby();
+            }
+            return resp;
+        }
     }
 
     /**
@@ -71,7 +76,7 @@ class Room {
 
     /**
      * 
-     * @param {Player[]} players 
+     * @param {Player[]} players (optional)
      */
     updateLobby(players) {
         if (players == undefined) players = []

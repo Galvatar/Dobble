@@ -51,18 +51,10 @@ class Game {
         const pileCard = this.#deck[this.#pile];
         const playerCardIdx = this.#playerIdx.get(message.getFirstPlayer());
         const playerCard = this.#deck[this.#card[playerCardIdx]];
-        var player = false;
-        var pile = false;
+
         const symbol = Number(message.payload);
-        for (let i = 0; i < pileCard.symbols.length; i++) {
-            if (pileCard.symbols[i] == symbol) {
-                pile = true;
-            }
-            if (playerCard.symbols[i] == symbol) {
-                player = true;
-            }
-        }
-        return player && pile;
+
+        return pileCard.symbols.includes(symbol) && playerCard.symbols.includes(symbol);
     }
 
     /**
