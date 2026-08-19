@@ -1,5 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Card, Message, Player, ServerAction } from "../lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "ws://localhost:4000"
 
@@ -8,6 +9,7 @@ export function useSocket() {
   const [room, setRoom] = useState("");
   const [name, setName] = useState("");
   const [pile, setPile] = useState(0);
+  const [hand, setHand] = useState(0);
   const [deck, setDeck] = useState([] as Card[]);
   const [players, setPlayers] = useState([] as Player[]);
   const wsRef = useRef<WebSocket | null>(null);
@@ -29,7 +31,10 @@ export function useSocket() {
       resetVars();
       setStatus("disconnected");
     }
-    ws.onmessage = (event) => handleMessage(event.data);
+    ws.onmessage = (event) => {
+      const msg: Message = JSON.parse(event.data);
+      handleMessage(msg);
+    }
 
     return () => {
       ws.close();
@@ -41,45 +46,43 @@ export function useSocket() {
     setName('');
   }
 
-  const sendMessage = (data: string) => {
+  const sendMessage = (message: Message) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(data);
+      wsRef.current.send(JSON.stringify(message));
     }
   };
 
-  const handleMessage = (message: string) => {
-    const parts = message.split('|');
-    const command = parts[0].trim();
-    const payload = parts[1].trim();
-    if (command == "room") {
-      setRoom(payload);
-      router.push('/name');
-    } else if (command == "user") {
-      setName(payload);
+  const handleMessage = (message: Message) => {
+    if (message.command == ServerAction.SET_NAME) {
+      setName(message.payload);
+      router.push('/room');
+    } else if (message.command == ServerAction.JOIN_GAME) {
+      setRoom(message.payload);
       router.push('/lobby');
-    } else if (command == "lobby") {
-      var lobby: Player[] = JSON.parse(payload);
-      lobby.sort((a,b) => b.score - a.score);
-      setPlayers(lobby);
-    } else if (command == "kick") {
+    } else if (message.command == ServerAction.LOBBY_UPDATE) {
+      setPlayers(JSON.parse(message.payload));
+    } else if (message.command == ServerAction.KICK_PLAYER) {
       resetVars();
       router.push('/');
-    } else if (command == "deck") {
-      setDeck(JSON.parse(payload));
-      router.push('/game');
-    } else if (command == "pile") {
-      setPile(Number(payload));
-    } else if (command == "gameOver") {
-      router.push('/lobby');
+    } else if (message.command == ServerAction.SET_DECK) {
+      setDeck(JSON.parse(message.payload));
+    } else if (message.command == ServerAction.SET_HAND) {
+      setHand(Number(message.payload));
+    } else if (message.command == ServerAction.SET_PILE) {
+      setPile(Number(message.payload));
+    } else if (message.command == ServerAction.START_GAME) {
+      router.push('/game')
+    } else if (message.command == ServerAction.GAME_OVER) {
+      router.push('/lobby')
     }
     console.log(message);
   };
 
   return { 
-    ws: wsRef.current,
     cardsPlayed,
     pile, 
-    deck,
+    hand, 
+    deck, 
     players, 
     player, 
     room, 

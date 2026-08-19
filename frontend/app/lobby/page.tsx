@@ -5,18 +5,27 @@ import { useState } from "react";
 import { useSharedSocket } from "../components/socketContext";
 import PlayerCard from "./components/playerCard";
 import HostPanel from "./components/hostPanel";
+import { ClientAction, Message, Player } from "../lib/types";
 
 export default function Lobby() {
-    const  { ws, players, player: me } = useSharedSocket();
+    const  { players, player: me, sendMessage } = useSharedSocket();
 
     const connected = players.filter((p) => p.connected).length;
 
     function handleKick(player: Player) {
-        ws!.send("kick|"+player.name)
+        const message: Message = {
+            command: ClientAction.KICK_PLAYER,
+            payload: player.name
+        }
+        sendMessage(message);
     }
 
     function handleStart(mode: number) {
-        ws!.send("game|"+mode)
+        const message: Message = {
+            command: ClientAction.START_GAME,
+            payload: String(mode)
+        }
+        sendMessage(message);
     }
 
     return (

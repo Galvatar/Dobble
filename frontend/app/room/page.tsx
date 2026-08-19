@@ -3,14 +3,21 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useSharedSocket } from "../components/socketContext";
+import { ClientAction, Message } from "../lib/types";
 
 export default function Name() {
   const [input, setInput] = useState("");
-  const socket = useSharedSocket();
+  const { sendMessage } = useSharedSocket();
 
   function handleSubmit() {
     const submit = input.trim();
-    if (submit.length > 0) socket.sendMessage(`name|${submit}`);
+    if (submit.length > 0) {
+      const message: Message = {
+        command: ClientAction.JOIN_GAME,
+        payload: submit
+      }
+      sendMessage(message);
+    };
     setInput("");
   }
 
@@ -30,14 +37,14 @@ export default function Name() {
           }
         }}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Your name"
+        placeholder="Room Name"
         className="bg-white font-medium border-2 rounded-md border-black outline-none text-black p-2"
       />
       <button
         className="bg-purple-300 p-3 font-bold rounded-lg border-2 border-black text-black"
         onClick={() => handleSubmit()}
       >
-        SET NAME
+        JOIN/CREATE
       </button>
     </div>
   );

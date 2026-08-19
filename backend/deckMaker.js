@@ -1,6 +1,28 @@
-const tbl = createDeck(7)
+import Card from "./card.js";
+import { CARDS, ORDER } from "./constants.js";
 
-export function createDeck(order) {
+export function createCards() {
+    var cards = [];
+    const tbl = createDeck(ORDER);
+    for (let i = 0; i < CARDS; i++) {
+        const card = new Card(
+            shuffle(tbl[0][i]),
+            tbl[1][i]
+        )
+        cards.push(card);
+    }
+    return shuffle(cards);
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function createDeck(order) {
     var grid = [];
     var count = 0;
     const size = (order*order)+order+1;
@@ -8,8 +30,8 @@ export function createDeck(order) {
     for (let i = 0; i < order+1; i++) {
         grid[i] = [];
         for (let j = 0; j < order; j++) {
-            var rand = getRandomInt(0,56);
-            while (seen[rand]) rand = getRandomInt(0,56);
+            var rand = getRandomInt(0,size-1);
+            while (seen[rand]) rand = getRandomInt(0,size-1);
             grid[i][j] = rand;
             seen[rand] = true;
         }

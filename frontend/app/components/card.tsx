@@ -1,6 +1,7 @@
-import Image from "next/image";
+"use client"
+
 import { symbols } from "../lib/symbols";
-import { useEffect, useState } from "react";
+import { Card } from "../lib/types";
 
 type ObjectProps = {
   color: string;
@@ -26,7 +27,7 @@ interface CardProps {
     onClicked?(symbol: number): void
 }
 
-export default function Card({ card, bottom, onClicked }: CardProps) {
+export default function CardView({ card, bottom, onClicked }: CardProps) {
     if (card == null) return (<></>)
 
     return (

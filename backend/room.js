@@ -1,181 +1,99 @@
 import Game from "./game.js";
+import Message, { ClientAction, ServerAction } from "./message.js";
 import Player from "./player.js";
 
 class Room {
+    /** @type {string} */
     #name;
-    #mode;
-    #connections = new Map();
-    #deleteRoom;
+    /** @type {string} */
+    #host;
     /** @type {Game} */
     #game;
+    /** @type {Map()} */
+    #players;
+    #handleServerMessage;
 
-    constructor(name, deleteRoom) {
-        this.#name = name;
-        this.#deleteRoom = deleteRoom;
+    constructor(name, handleServerMessage, host) {
+        this.name = name;
+        this.#host = host;
         this.#game = null;
-    }
-
-    join(ws) {
-        this.handleConnection(ws)
-        ws.send(`room|${this.#name}`);
-        ws.on('message', (data) => {
-            this.handleMessage(data, ws);
-        })
-        ws.on('close', () => {
-            this.handleDisconnection(ws);
-        });
-    }
-
-    handleDisconnection(ws) {
-        var player = this.#connections.get(ws)
-        player.connected = false;
-        this.#connections.set(ws, player)
-        if (player.isHost()) {
-            player.setHost(false);
-            var set = false;
-            for (const [ws, player] of this.#connections) {
-                if (player.connected) {
-                    player.setHost(true);
-                    this.#connections.set(ws, player);
-                    set = true;
-                    break;
-                }
-            }
-            if (!set) {
-                console.log(`Deleted room: ${this.#name}`)
-                this.#deleteRoom(this.#name);
-            }
-        }
-        this.notifyLobby()
-    }
-
-    handleConnection(ws) {
-        ws.send(`room|${this.#name}`);
-        var player = new Player(ws);
-        if (this.#connections.size == 0) player.setHost(true);
-        this.#connections.set(ws, player)
-    }
-
-    handleMessage(message, ws) {
-        const parts = message.toString().split('|');
-        const command = parts[0].trim();
-        const payload = parts[1].trim();
-
-        if (this.#game != null) {
-            this.handleGame(ws, command, payload);
-            return;
-        }
-
-        if (command == "send") {
-            this.broadcast(payload);
-        } else if (command == "name") {
-            const name = this.checkReconnectAndName(payload, ws);
-            this.#connections.get(ws).setName(name)
-            this.notifyLobby()
-        } else if (command == "kick") {
-            for (const [ws,player] of this.#connections) {
-                if (player.name === payload) {
-                    player.send("kick|");
-                    this.#connections.delete(ws);
-                }
-            }
-            this.notifyLobby()
-        } else if (command == "game") {
-            this.startGame(payload);
-        }
-    }
-
-    startGame(payload) {
-        this.#game = new Game(payload)
-        const deck = this.#game.getDeck();
-        this.broadcast(`deck|${JSON.stringify(deck)}`);
-        for (const [ws, player] of this.#connections) {
-            player.card = this.#game.getNext(-1);
-            this.#connections.set(ws, player);
-        }
-        this.notifyLobby()
+        this.#players = new Map();
+        this.#handleServerMessage = handleServerMessage;
     }
 
     /**
      * 
-     * @param {string} command 
-     * @param {string} payload 
+     * @param {Message} message 
      */
-    handleGame(ws, command, payload) {
-        if (Number(command) == NaN) return;
-        const pile = Number(command)
-        const symbol = Number(payload)
-        var player = this.#connections.get(ws);
-
-        if (this.#game.isPileTop(pile)) {
-            const playerCardIdx = player.card;
-            if (this.#game.validMatch(playerCardIdx, symbol)) {
-                player.score++;
-                const newCard = this.#game.getNext(playerCardIdx);
-                if (newCard == -1) {
-                    this.handleGameOver();
-                    return;
-                }
-                player.card = newCard;
-                this.broadcast(`pile|${this.#game.getPile()}`);
-            } else {
-                player.score--;
-            }
-            this.#connections.set(ws, player);
-            this.notifyLobby();
+    handleClientMessage(message) {
+        var resp = message;
+        if (message.command == ClientAction.JOIN_GAME) {
+            this.#players.set(message.getFirstPlayer(), 0);
+            this.updateLobby();
+        } else if (message.command == ClientAction.KICK_PLAYER) {
+            this.#players.delete(message.payload);
+            resp = new Message(ServerAction.KICK_PLAYER, message.payload);
+            resp.addPlayer(message.payload);
+            this.updateLobby();
+        } else if (message.command == ClientAction.START_GAME) {
+            this.#game = new Game(
+                Number(message.payload),
+                (msg) => this.handleServerMessage(msg),
+                [...this.#players.keys()]
+            )
+            resp = this.#game.handleMessage(message);
+        } else if (message.command == ClientAction.SUBMIT_SYMBOL) {
+            resp = this.#game.handleMessage(message);
         }
+        if (resp.command == ServerAction.GAME_OVER) {
+            const scores = JSON.parse(resp.payload);
+            for (const obj of scores) {
+                const newScore = this.#players.get(obj.player)+obj.score
+                this.#players.set(obj.player, newScore);
+            }
+            this.updateLobby();
+        }
+        if (resp != null || resp != undefined) return resp;
     }
 
-    handleGameOver() {
-        this.notifyLobby();
-        this.broadcast("gameOver|");
-        this.#game == null;
-    }
-
-    notifyLobby() {
-        const valuesArray = [...this.#connections.values()];
-
-        const jsonString = JSON.stringify(valuesArray, null, 2);
-        this.broadcast(`lobby|${jsonString}`);
-    }
-
-    printRoom() {
-        for (const [ws, player] of this.#connections) {
-            console.log(player.name + " " + player.connected);
+    /**
+     * 
+     * @param {Message} message 
+     */
+    handleServerMessage(message) {
+        if (message == null || message == undefined) return;
+        if (message.command == ServerAction.LOBBY_UPDATE) {
+            this.updateLobby(JSON.parse(message.payload));
+        } else {
+            this.#handleServerMessage(message);
         }
     }
 
     /**
-     * @param {string} name 
+     * 
+     * @param {Player[]} players 
      */
-    checkReconnectAndName(name, conn) {
-        var count = 0;
-        const size = name.length;
-        for (const [ws, player] of this.#connections) {
-            if (player.name != null) {
-                if (player.name.substring(0, size) === name) {
-                    count++;
-                }
-                if (player.name === name && !player.connected) {
-                    player.connected = true;
-                    player.setWs(conn);
-
-                    this.#connections.delete(conn);
-                    this.#connections.delete(ws);
-
-                    this.#connections.set(conn, player);
-                    return player.name;
-                }
+    updateLobby(players) {
+        if (players == undefined) players = []
+        if (players.length == 0) {
+            for (const [player, score] of this.#players) {
+                var playerDTO = new Player();
+                playerDTO.name = player
+                playerDTO.score = score
+                playerDTO.host = this.#host == player;
+                players.push(playerDTO)
+            }
+        } else {
+            for (var player of players) {
+                player.host = this.#host == player;
             }
         }
-        if (count > 0) return name + count;
-        return name;
-    }
-
-    broadcast(message) {
-        for (const [ws, player] of this.#connections) {
-            player.send(message)
-        }
+        const message = new Message(
+            ServerAction.LOBBY_UPDATE,
+            JSON.stringify(players)
+        )
+        for (const player of players) message.addPlayer(player.name);
+        this.#handleServerMessage(message);
     }
 }
 

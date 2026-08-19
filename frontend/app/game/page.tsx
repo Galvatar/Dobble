@@ -1,13 +1,19 @@
 "use client"
 
+import CardView from "../components/card";
 import Card from "../components/card";
 import { useSharedSocket } from "../components/socketContext";
+import { ClientAction, Message } from "../lib/types";
 
 export default function GameScreen() {
-    const { ws, deck, cardsPlayed, pile, player } = useSharedSocket();
+    const { deck, cardsPlayed, pile, hand, player, sendMessage } = useSharedSocket();
 
     function handleClick(symbol: number) {
-        ws!.send(`${pile}|${symbol}`)
+        const message: Message = {
+            command: ClientAction.SUBMIT_SYMBOL,
+            payload: String(symbol)
+        }
+        sendMessage(message);
     }
 
     return (
@@ -24,13 +30,13 @@ export default function GameScreen() {
                         {player?.score ?? 0}
                     </h2>
                 </span>
-                <Card card={deck[pile ?? 0]} bottom={false} />
+                <CardView card={deck[pile ?? 0]} bottom={false} />
             </div>
             <div className="flex flex-col gap-1 items-center h-full bg-purple-300 w-full pb-5 border-t-2 border-black">
                 <h1 className="font-bold text-lg text-black">
                     Your Hand ▼
                 </h1>
-                <Card card={deck[player?.card ?? 0]} bottom={true} onClicked={(s) => handleClick(s)} />
+                <CardView card={deck[hand ?? 0]} bottom={true} onClicked={(s) => handleClick(s)} />
             </div>
         </div>
     )

@@ -61,3 +61,5 @@ user:user_name
 
 during game
 user sends pileIdx|symbol
+
+if server message contains player name send to that player otherwise send to all in that room

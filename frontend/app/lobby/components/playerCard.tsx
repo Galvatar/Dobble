@@ -1,3 +1,4 @@
+import { Player } from "@/app/lib/types";
 import { useState } from "react";
 
 interface PlayerCardProps {

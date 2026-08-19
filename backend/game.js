@@ -1,86 +1,182 @@
+import { json } from "node:stream/consumers";
 import Card from "./card.js";
-import { createDeck } from "./deckMaker.js";
+import { createCards } from "./deckMaker.js";
+import Message, { ClientAction, ServerAction } from "./message.js";
+import Player from "./player.js";
+import { CARDS } from "./constants.js";
 
 class Game {
-    #deck;
+    /** @type {Number} */
     #mode;
-    #pile;
+    /** @type {Number[]} */
+    #scores;
+    /** @type {Number[]} */
+    #card;
+    /** @type {Map()} */
+    #playerIdx;
+    /** @type {Number} */
     #top;
-    #max;
+    /** @type {Number} */
+    #pile;
+    /** @type {Card[]} */
+    #deck;
+    #handleServerMessage;
 
-    constructor(mode) {
-        this.#max = 0;
-        this.#pile = 0;
-        this.#top = 1;
+    /**
+     * 
+     * @param {Number} mode 
+     * @param {*} handleServerMessage 
+     * @param {string[]} players 
+     */
+    constructor(mode, handleServerMessage, players) {
         this.#mode = mode;
-        this.#deck = [];
-        this.createCards();
+        this.#scores = new Array(players.length).fill(0);
+        this.#card = new Array(players.length).fill(0);
+        this.#playerIdx = new Map();
+        this.#handleServerMessage = handleServerMessage;
+        this.#top = 0;
+        this.#pile = 0;
+        var idx = 0;
+        for (const player of players) {
+            this.#playerIdx.set(player, idx++);
+        }
+        this.#deck = createCards();
     }
 
-    isPileTop(idx) {
-        return this.#pile == idx;
-    }
-
-    validMatch(cardIdx, symbol) {
-        const playerCard = this.#deck.at(cardIdx);
-        const pileCard = this.#deck.at(this.#pile);
-        const n = pileCard.symbols.length;
+    /**
+     * 
+     * @param {Message} message 
+     */
+    validateSymbol(message) {
+        const pileCard = this.#deck[this.#pile];
+        const playerCardIdx = this.#playerIdx.get(message.getFirstPlayer());
+        const playerCard = this.#deck[this.#card[playerCardIdx]];
         var player = false;
         var pile = false;
-        for (let i = 0; i < n; i++) {
-            if (playerCard.symbols[i] == symbol) {
-                player = true;
-            }
+        const symbol = Number(message.payload);
+        for (let i = 0; i < pileCard.symbols.length; i++) {
             if (pileCard.symbols[i] == symbol) {
                 pile = true;
             }
+            if (playerCard.symbols[i] == symbol) {
+                player = true;
+            }
         }
-        return pile && player;
+        return player && pile;
     }
 
-    getNext(userCardIdx) {
-        if (this.#top == this.#max) return -1;
-        if (userCardIdx == -1) {
-            return this.#top++;
+    /**
+     * 
+     * @param {Message} message 
+     */
+    handleMessage(message) {
+        if (message.command == ClientAction.START_GAME) {
+            this.handleGameStart();
+            const resp = new Message(
+                ServerAction.START_GAME,
+                ""
+            )
+            for (const [player,idx] of this.#playerIdx) resp.addPlayer(player);
+            return resp;
+        } else if (message.command == ClientAction.SUBMIT_SYMBOL) {
+            const resp = this.handleSymbolSubmit(message);
+            if (resp != null || resp != undefined) return resp;
         }
-        if (this.#mode == 0) {
-            this.#pile = userCardIdx;
-            return this.#top++;
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     * @returns {Message | null}
+     */
+    handleSymbolSubmit(message) {
+        const playerIdx = this.#playerIdx.get(message.getFirstPlayer());
+        if (this.validateSymbol(message)) {
+            this.#scores[playerIdx]++;
+            this.#top++;
+            const pileTop = this.#pile;
+            this.#pile = this.#mode == 0 ? this.#card[playerIdx] : this.#top;
+
+            const pile = new Message(
+                ServerAction.SET_PILE,
+                String(this.#pile)
+            )
+            for (const [player,idx] of this.#playerIdx) pile.addPlayer(player);
+            this.#handleServerMessage(pile);
+
+            if (this.#top < CARDS) {
+                this.#card[playerIdx] = this.#mode == 0 ? this.#top : pileTop;
+                const hand = new Message(
+                    ServerAction.SET_HAND,
+                    String(this.#card[playerIdx])
+                )
+                hand.addPlayer(message.getFirstPlayer());
+                this.updateLobby();
+                return hand;
+            } else {
+                var scores = [];
+                for (const [player, idx] of this.#playerIdx) {
+                    const obj = {
+                        player: player,
+                        score: this.#scores[idx]
+                    }
+                    scores.push(obj)
+                }
+                const over = new Message(
+                    ServerAction.GAME_OVER,
+                    JSON.stringify(scores)
+                )
+                for (const [player, idx] of this.#playerIdx) over.addPlayer(player);
+                return over;
+            }
         } else {
-            const pile = this.#pile;
-            this.#pile = this.#top++;
-            return pile;
+            this.#scores[playerIdx]--;
+            return null;
         }
     }
 
-    getPile(idx) {
-        return this.#pile;
-    }
-
-    createCards() {
-        const order = 7
-        this.#max = (order*order)+order;
-        const cards = createDeck(order);
-        const m = cards[0].length;
-        var deck = [];
-        for (let i = 0; i < m; i++) {
-            const symbols = this.shuffle(cards[0][i])
-            const curr = new Card(symbols, cards[1][i]);
-            deck.push(curr);
+    handleGameStart() {
+        const deck = new Message(
+            ServerAction.SET_DECK,
+            JSON.stringify(this.#deck)
+        )
+        const pile = new Message(
+            ServerAction.SET_PILE,
+            String(this.#top++)
+        )
+        for (const [player,idx] of this.#playerIdx) {
+            deck.addPlayer(player);
+            pile.addPlayer(player);
         }
-        this.#deck = this.shuffle(deck);
-    }
-
-    shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
+        this.#handleServerMessage(deck);
+        this.#handleServerMessage(pile);
+        for (const [player,idx] of this.#playerIdx) {
+            const cardIdx = this.#top++;
+            const hand = new Message(
+                ServerAction.SET_HAND,
+                String(cardIdx)
+            )
+            this.#card[idx] = cardIdx;
+            hand.addPlayer(player);
+            this.#handleServerMessage(hand)
         }
-        return array;
+        this.#top--;
     }
 
-    getDeck() {
-        return this.#deck;
+    updateLobby() {
+        var players = [];
+        for (const [player,idx] of this.#playerIdx) {
+            const playerDTO = new Player()
+            playerDTO.name = player;
+            playerDTO.card = this.#card[idx];
+            playerDTO.score = this.#scores[idx];
+            players.push(playerDTO);
+        }
+        const msg = new Message(
+            ServerAction.LOBBY_UPDATE,
+            JSON.stringify(players)
+        )
+        this.#handleServerMessage(msg)
     }
 }
 
