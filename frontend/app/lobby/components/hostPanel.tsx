@@ -7,7 +7,7 @@ interface HostPanelProps {
 
 export default function HostPanel({ onStart }: HostPanelProps) {
     const [selected, setSelected] = useState(0);
-    const MODES = ["The Well", "The Tower", "Hot Potato (WIP)"];
+    const MODES = ["The Well", "The Tower"];
 
     return (
         <div className="flex w-full justify-between">

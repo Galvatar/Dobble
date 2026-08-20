@@ -1,25 +1,8 @@
 "use client"
 
+import { cardLayout } from "../lib/constants";
 import { symbols } from "../lib/symbols";
 import { Card } from "../lib/types";
-
-type ObjectProps = {
-  color: string;
-  bottom: string;
-  left: string;
-  rotation: string;
-};
-
-const objectDictionary: Record<number, ObjectProps> = {
-  1: { color: "#ef4444", bottom: "82%", left: "50%", rotation: "180deg" }, // Top
-  2: { color: "#f97316", bottom: "70%", left: "75%", rotation: "231deg" }, // Top-Right
-  3: { color: "#eab308", bottom: "43%", left: "81%", rotation: "283deg" }, // Mid-Right
-  4: { color: "#22c55e", bottom: "21%", left: "64%", rotation: "334deg" }, // Bottom-Right
-  5: { color: "#06b6d4", bottom: "21%", left: "36%", rotation: "26deg" },  // Bottom-Left
-  6: { color: "#3b82f6", bottom: "43%", left: "19%", rotation: "77deg" },  // Mid-Left
-  7: { color: "#a855f7", bottom: "70%", left: "25%", rotation: "129deg" }, // Top-Left
-  8: { color: "#ec4899", bottom: "50%", left: "50%", rotation: "0deg" }    // Center
-};
 
 interface CardProps {
     card: Card,
@@ -28,7 +11,7 @@ interface CardProps {
 }
 
 export default function CardView({ card, bottom, onClicked }: CardProps) {
-    if (card == null) return (<></>)
+    if (card == null) return null;
 
     return (
         <div className="relative h-full aspect-square overflow-visible">
@@ -44,9 +27,9 @@ export default function CardView({ card, bottom, onClicked }: CardProps) {
                     }}
                     className="flex absolute z-10 aspect-square items-center justify-center overflow-visible"
                     style={{ 
-                        bottom: objectDictionary[idx+1].bottom, 
-                        left: objectDictionary[idx+1].left, 
-                        transform: `translate(-50%, 50%) rotate(${objectDictionary[idx+1].rotation})`,
+                        bottom: cardLayout[idx+1].bottom, 
+                        left: cardLayout[idx+1].left, 
+                        transform: `translate(-50%, 50%) rotate(${cardLayout[idx+1].rotation})`,
                         width: `${card.sizes[idx]}%`
                     }}
                 >

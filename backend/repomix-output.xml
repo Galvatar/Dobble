@@ -1,0 +1,978 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+card.js
+constants.js
+deck.js
+game.js
+gameParticipant.js
+index.js
+message.js
+package.json
+player.js
+room.js
+roomManager.js
+sessionManager.js
+webSocketHandler.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="card.js">
+class Card {
+    constructor (symbols, sizes) {
+        this.symbols = symbols;
+        this.sizes = sizes;
+    }
+}
+
+export default Card;
+</file>
+
+<file path="constants.js">
+export const ORDER = 7;
+export const CARDS = (ORDER*ORDER)+ORDER+1;
+</file>
+
+<file path="deck.js">
+import Card from "./card.js";
+import { CARDS, ORDER } from "./constants.js";
+
+class Deck {
+    /** @type {Card[]} */
+    #cards;
+    /** @type {number} */
+    #top;
+    /** @type {number} */
+    #pile;
+
+    constructor() {
+        this.#cards = [];
+        this.#top = 1;
+        this.#pile = 0;
+        this.createCards()
+    }
+
+    isGameOver() {
+        return this.#top >= CARDS
+    }
+
+    draw() {
+        return this.#top++;
+    }
+
+    getCard(idx) {
+        return this.#cards[idx];
+    }
+
+    getPileCard() {
+        return this.#cards[this.#pile];
+    }
+
+    getPile() {
+        return this.#pile
+    }
+
+    /**
+     * 
+     * @param {number} idx 
+     */
+    setPileCard(idx) {
+        this.#pile = idx;
+    }
+
+    createCards() {
+        const tbl = this.createDeck(ORDER);
+        for (let i = 0; i < CARDS; i++) {
+            const card = new Card(
+                this.shuffle(tbl[0][i]),
+                tbl[1][i]
+            )
+            this.#cards.push(card);
+        }
+        return this.shuffle(this.#cards);
+    }
+
+    shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    createDeck(order) {
+        var grid = [];
+        var count = 0;
+        const size = (order*order)+order+1;
+        var seen = new Array(size).fill(false);
+        for (let i = 0; i < order+1; i++) {
+            grid[i] = [];
+            for (let j = 0; j < order; j++) {
+                var rand = this.getRandomInt(0,size-1);
+                while (seen[rand]) rand = this.getRandomInt(0,size-1);
+                grid[i][j] = rand;
+                seen[rand] = true;
+            }
+        }
+        for (let i = 0; i < size; i++) {
+            if (!seen[i]) {
+                count = i;
+            }
+        }
+
+        var res = [];
+        for (var m = 1; m < order; m++) {
+            for (let c = 0; c < order; c++) {
+                var card = []
+                for (let x = 0; x < order; x++) {
+                    const y = ((m * x) + c) % order;
+                    card.push(grid[x][y]);
+                }
+                card.push(grid[order][m]);
+                res.push(card)
+            }
+        }
+
+        for (let c = 0; c < order; c++) {
+            var card = [];
+            var card1 = [];
+            for (let x = 0; x < order; x++) {
+                const y = ((m*x)+c)%order;
+                card.push(grid[x][y]);
+                card1.push(grid[y][x]);
+            }
+            card.push(grid[order][0]);
+            card1.push(count);
+            res.push(card);
+            res.push(card1);
+        }
+        var last = [];
+        for (let m = 0; m < order; m++) {
+            last.push(grid[order][m]);
+        }
+        last.push(count);
+        res.push(last);
+
+        const sizes = this.generateSizes(res);
+        return [res, sizes];
+    }
+
+    /**
+     * 
+     * @param {number[][]} grid
+     */
+    generateSizes(grid) {
+        const m = grid.length;
+        const n = grid[0].length;
+        const options = [20,25,30];
+        var res = Array.from({ length: m }, () => new Array(n).fill(0));
+        for (let i = 0; i < m; i++) {
+            for (let j = 0; j < n; j++) {
+                res[i][j] = options[this.getRandomInt(0,2)];
+            }
+        }
+        return res;
+    }
+
+    getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    toJSON() {
+        return this.#cards;
+    }
+}
+
+export default Deck;
+</file>
+
+<file path="game.js">
+import { json } from "node:stream/consumers";
+import Card from "./card.js";
+import Deck from "./deck.js";
+import Message, { ClientAction, ServerAction } from "./message.js";
+import Player from "./player.js";
+import { CARDS } from "./constants.js";
+import GameParticipant from "./gameParticipant.js";
+
+class Game {
+    /** @type {Number} */
+    #mode;
+    /** @type {Map()} */
+    #playerParticipants;
+    /** @type {Deck} */
+    #deck;
+    #handleServerMessage;
+
+    /**
+     * 
+     * @param {Number} mode 
+     * @param {*} handleServerMessage 
+     * @param {string[]} players 
+     */
+    constructor(mode, handleServerMessage, players) {
+        this.#mode = mode;
+        this.#playerParticipants = new Map();
+        this.#handleServerMessage = handleServerMessage;
+        for (const player of players) {
+            this.#playerParticipants.set(player, new GameParticipant(player));
+        }
+        this.#deck = new Deck();
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     */
+    validateSymbol(message) {
+        const pileCard = this.#deck.getPileCard();
+        const playerCardIdx = this.#playerParticipants.get(message.getFirstPlayer()).card
+        const playerCard = this.#deck.getCard(playerCardIdx);
+
+        const symbol = Number(message.payload);
+
+        return pileCard.symbols.includes(symbol) && playerCard.symbols.includes(symbol);
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     */
+    handleMessage(message) {
+        if (message.command == ClientAction.START_GAME) {
+            this.handleGameStart();
+            const resp = new Message(
+                ServerAction.START_GAME,
+                ""
+            )
+            for (const [player,participant] of this.#playerParticipants) resp.addPlayer(player);
+            return resp;
+        } else if (message.command == ClientAction.SUBMIT_SYMBOL) {
+            const resp = this.handleSymbolSubmit(message);
+            if (resp != null || resp != undefined) return resp;
+        }
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     * @returns {Message | null}
+     */
+    handleSymbolSubmit(message) {
+        /** @type {GameParticipant} */
+        const gameParticipant = this.#playerParticipants.get(message.getFirstPlayer());
+        if (this.validateSymbol(message)) {
+            gameParticipant.score++;
+            const pileTop = this.#deck.getPile();
+            this.#deck.setPileCard(this.#mode == 0 ? gameParticipant.card : this.#deck.draw());
+
+            const pile = new Message(
+                ServerAction.SET_PILE,
+                String(this.#deck.getPile())
+            )
+            for (const [player,participant] of this.#playerParticipants) pile.addPlayer(player);
+            this.#handleServerMessage(pile);
+
+            if (!this.#deck.isGameOver()) {
+                gameParticipant.card = this.#mode == 0 ? this.#deck.draw() : pileTop;
+                const hand = new Message(
+                    ServerAction.SET_HAND,
+                    String(gameParticipant.card)
+                )
+                hand.addPlayer(message.getFirstPlayer());
+                this.updateLobby();
+                return hand;
+            } else {
+                var scores = [...this.#playerParticipants.values()];
+                const over = new Message(
+                    ServerAction.GAME_OVER,
+                    JSON.stringify(scores)
+                )
+                for (const [player,participant] of this.#playerParticipants) over.addPlayer(player);
+                return over;
+            }
+        } else {
+            gameParticipant.score--;
+            return null;
+        }
+        this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
+    }
+
+    handleGameStart() {
+        const deck = new Message(
+            ServerAction.SET_DECK,
+            JSON.stringify(this.#deck)
+        )
+        const pile = new Message(
+            ServerAction.SET_PILE,
+            String(this.#deck.getPile())
+        )
+        for (const [player,participant] of this.#playerParticipants) {
+            deck.addPlayer(player);
+            pile.addPlayer(player);
+        }
+        this.#handleServerMessage(deck);
+        this.#handleServerMessage(pile);
+        for (const [player,participant] of this.#playerParticipants) {
+            const cardIdx = this.#deck.draw();
+            const hand = new Message(
+                ServerAction.SET_HAND,
+                String(cardIdx)
+            )
+            participant.card = cardIdx;
+            this.#playerParticipants.set(player, participant);
+            hand.addPlayer(player);
+            this.#handleServerMessage(hand)
+        }
+    }
+
+    updateLobby() {
+        var players = [...this.#playerParticipants.values()];
+        const msg = new Message(
+            ServerAction.LOBBY_UPDATE,
+            JSON.stringify(players)
+        )
+        this.#handleServerMessage(msg)
+    }
+}
+
+export default Game;
+</file>
+
+<file path="gameParticipant.js">
+class GameParticipant {
+    constructor (name) {
+        this.name = name;
+        this.score = 0;
+        this.card = 0;
+    }
+}
+
+export default GameParticipant;
+</file>
+
+<file path="index.js">
+import RoomManager from "./roomManager.js"
+import SessionManager from "./sessionManager.js";
+import WebSocketHandler from "./webSocketHandler.js";
+
+const sessionManager = new SessionManager();
+const roomManager = new RoomManager(sessionManager);
+const wsHandler = new WebSocketHandler(roomManager, sessionManager);
+</file>
+
+<file path="message.js">
+class Message {
+    /**
+     * 
+     * @param {ClientAction | ServerAction} command 
+     * @param {string} payload 
+     * @param {Set()} players
+     */
+    constructor(command, payload) {
+        this.command = command;
+        this.payload = payload;
+        this.players = new Set();
+    }
+
+    addPlayer(name) {
+        this.players.add(name);
+    }
+
+    /**
+     * 
+     * @returns {string}
+     */
+    getFirstPlayer() {
+        return this.players.values().next().value;
+    }
+
+    /**
+     * 
+     * @param {string} json
+     * @returns {Message}
+     */
+    static fromJSON(json) {
+        if (!json) return null;
+        
+        const data = typeof json === 'string' ? JSON.parse(json) : json;
+        const validCommand = Object.values(allActions).find(val => val === data?.command);
+
+        if (!validCommand) {
+            console.warn(`Unknown command: ${data?.command}`);
+            return null;
+        }
+
+        return new Message(data?.command, data?.payload);
+    }
+
+    toJSON() {
+        return {
+            command: this.command,
+            payload: this.payload
+        };
+    }
+}
+
+export const ClientAction = Object.freeze({
+  JOIN_GAME: "join_game",
+  SUBMIT_SYMBOL: "submit_symbol",
+  KICK_PLAYER: "kick_player",
+  START_GAME: "start_game",
+  SET_NAME: "set_name",
+  CLIENT_DISCONNECT: "client_disconnect"
+});
+
+export const ServerAction = Object.freeze({
+  SET_NAME: "set_name",
+  JOIN_GAME: "join_game",
+  LOBBY_UPDATE: "lobby_update",
+  KICK_PLAYER: "kick_player",
+  SUBMIT_SYMBOL: "submit_symbol",
+  START_GAME: "start_game",
+  SET_PILE: "set_pile",
+  SET_HAND: "set_hand",
+  GAME_OVER: "game_over",
+  SET_DECK: "set_deck"
+});
+
+
+const allActions = [
+    ...Object.values(ClientAction), 
+    ...Object.values(ServerAction)
+];
+
+export default Message;
+</file>
+
+<file path="package.json">
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "express": "^5.2.1",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0"
+  }
+}
+</file>
+
+<file path="player.js">
+class Player {
+    constructor() {
+        this.name = ""
+        this.score = 0;
+        this.connected = false;
+        this.host = false;
+        this.card = 0;
+    }
+
+    /**
+     * 
+     * @returns JSON string for this player
+     */
+    toJSON() {
+        return {
+            name: this.name,
+            score: this.score,
+            connected: this.connected,
+            host: this.host,
+            card: this.card
+        }
+    }
+
+    /**
+     * @param {string|Buffer|object} json 
+     * @returns {Player|null}
+     */
+    static fromJSON(json) {
+        if (!json) return null;
+
+        let data = json;
+    
+        // Only parse if it's a JSON string
+        if (typeof json === 'string') {
+            data = JSON.parse(json);
+        } 
+        // Handle Node.js Buffers specifically without calling toString() on plain objects
+        else if (typeof Buffer !== 'undefined' && Buffer.isBuffer(json)) {
+            data = JSON.parse(json.toString());
+        }
+
+        const player = new Player();
+        player.name = data.name ?? "";
+        player.score = data.score ?? 0;
+        player.connected = data.connected ?? false;
+        player.host = data.host ?? false;
+        player.card = data.card ?? 0;
+
+        return player;
+    }
+}
+
+export default Player;
+</file>
+
+<file path="room.js">
+import Game from "./game.js";
+import Message, { ClientAction, ServerAction } from "./message.js";
+import Player from "./player.js";
+
+class Room {
+    /** @type {string} */
+    #name;
+    /** @type {string} */
+    #host;
+    /** @type {Game} */
+    #game;
+    /** @type {Map()} */
+    #players;
+    #handleServerMessage;
+
+    constructor(name, handleServerMessage, host) {
+        this.name = name;
+        this.#host = host;
+        this.#game = null;
+        this.#players = new Map();
+        this.#handleServerMessage = handleServerMessage;
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     */
+    handleClientMessage(message) {
+        var resp = message;
+        if (message.command == ClientAction.JOIN_GAME) {
+            this.#players.set(message.getFirstPlayer(), 0);
+            this.updateLobby();
+        } else if (message.command == ClientAction.KICK_PLAYER) {
+            this.#players.delete(message.payload);
+            resp = new Message(ServerAction.KICK_PLAYER, message.payload);
+            resp.addPlayer(message.payload);
+            this.updateLobby();
+        } else if (message.command == ClientAction.START_GAME) {
+            this.#game = new Game(
+                Number(message.payload),
+                (msg) => this.handleServerMessage(msg),
+                [...this.#players.keys()]
+            )
+            resp = this.#game.handleMessage(message);
+        } else if (message.command == ClientAction.SUBMIT_SYMBOL) {
+            resp = this.#game.handleMessage(message);
+        } else if (message.command == ClientAction.CLIENT_DISCONNECT) {
+            this.updateLobby();
+            return [...this.#players.keys()]
+        }
+        if (resp != null || resp != undefined) {
+            if (resp.command == ServerAction.GAME_OVER) {
+                const scores = JSON.parse(resp.payload);
+                for (const obj of scores) {
+                    const newScore = this.#players.get(obj.name)+obj.score
+                    this.#players.set(obj.name, newScore);
+                }
+                this.updateLobby();
+            }
+            return resp;
+        }
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     */
+    handleServerMessage(message) {
+        if (message == null || message == undefined) return;
+        if (message.command == ServerAction.LOBBY_UPDATE) {
+            this.updateLobby(JSON.parse(message.payload));
+        } else {
+            this.#handleServerMessage(message);
+        }
+    }
+
+    /**
+     * 
+     * @param {Player[]} players (optional)
+     */
+    updateLobby(players) {
+        if (players == undefined) players = []
+        if (players.length == 0) {
+            for (const [player, score] of this.#players) {
+                var playerDTO = new Player();
+                playerDTO.name = player
+                playerDTO.score = score
+                playerDTO.host = this.#host == player;
+                players.push(playerDTO)
+            }
+        } else {
+            for (var player of players) {
+                player.host = this.#host == player;
+            }
+        }
+        const message = new Message(
+            ServerAction.LOBBY_UPDATE,
+            JSON.stringify(players)
+        )
+        for (const player of players) message.addPlayer(player.name);
+        this.#handleServerMessage(message);
+    }
+}
+
+export default Room;
+</file>
+
+<file path="roomManager.js">
+import Message, { ClientAction, ServerAction } from "./message.js";
+import Room from "./room.js";
+import { EventEmitter } from 'events';
+import SessionManager from "./sessionManager.js";
+import Player from "./player.js";
+
+export class RoomManager extends EventEmitter {
+    /** @type {Map()} */
+    #rooms;
+    /** @type {Map()} */
+    #playerRoom;
+    /** @type {SessionManager} */
+    #sessionManager;
+
+    constructor(sessionManager) {
+        super();
+        this.#rooms = new Map();
+        this.#playerRoom = new Map();
+        this.#sessionManager = sessionManager;
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     * @returns 
+     */
+    joinOrCreateRoom(message) {
+        /** @type {Room} */
+        var room = this.#rooms.get(message.payload);
+        if (room == undefined) {
+            room = new Room(
+                message.payload, // Name of the room
+                (msg) => this.handleServerMessage(msg), // Callback
+                message.getFirstPlayer() // Host player
+            );
+            this.#rooms.set(message.payload, room);
+        }
+        this.#playerRoom.set(message.getFirstPlayer(), message.payload);
+        return room;
+    }
+
+    /**
+     * 
+     * @param {string} name 
+     * @returns the room that player is in
+     */
+    fetchPlayerRoom(name) {
+        return this.#rooms.get(this.#playerRoom.get(name));
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     */
+    handleClientMessage(message) {
+        if (message.command == ClientAction.JOIN_GAME) {
+            const room = this.joinOrCreateRoom(message);
+            this.#rooms.set(message.payload, room);
+        } else if (message.command == ClientAction.KICK_PLAYER) {
+            this.#playerRoom.delete(message.payload);
+        }
+        /** @type {Room} */
+        const room = this.fetchPlayerRoom(message.getFirstPlayer());
+        if (room != null || room != undefined) {
+            if (message.command == ClientAction.CLIENT_DISCONNECT) {
+                const players = room.handleClientMessage(message);
+                this.handleRoomCleanup(players);
+                return null;
+            }
+            const resp = room.handleClientMessage(message);
+            return resp;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 
+     * @param {string[]} players 
+     */
+    handleRoomCleanup(players) {
+        var connected = false;
+        for (const player of players) {
+            connected = connected || this.#sessionManager.isConnected(player);
+        }
+        if (!connected) {
+            const room = this.#playerRoom.get(players[0])
+            this.#rooms.delete(room);
+        }
+    }
+
+    /**
+     * 
+     * @param {string} roomName 
+     * @param {Message} message 
+     */
+    handleServerMessage(message) {
+        if (message.command == ServerAction.LOBBY_UPDATE) {
+            const rawArray = typeof message.payload === 'string' 
+                ? JSON.parse(message.payload) 
+                : message.payload;
+            /** @type {Player[]} */
+            const players = rawArray.map(p => Player.fromJSON(p));
+            for (var player of players) {
+                player.connected = this.#sessionManager.isConnected(player.name);
+            }
+            message.payload = JSON.stringify(players);
+        }
+        this.emit('broadcast', {
+            message: JSON.stringify(message),
+            players: message.players ? [...message.players] : []
+        })
+    }
+}
+
+export default RoomManager;
+</file>
+
+<file path="sessionManager.js">
+import Message, { ClientAction } from "./message.js";
+
+export const Status = Object.freeze({
+  ONLINE: "ONLINE",
+  OFFLINE: "OFFLINE"
+});
+
+class SessionManager {
+    /** @type {Map()} */
+    #players;
+
+    constructor() {
+        this.#players = new Map();
+    }
+
+    /**
+     * 
+     * @param {string} name 
+     * @returns {boolean} connection status
+     */
+    isConnected(name) {
+        return this.#players.get(name) == Status.ONLINE;
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     */
+    handleMessage(message) {
+        if (message.command == ClientAction.SET_NAME) {
+            const name = this.createPlayer(message.payload);
+            message.payload = name;
+            message.addPlayer(name);
+            return message;
+        } else if (message.command == ClientAction.CLIENT_DISCONNECT) {
+            this.playerDisconnected(message.payload);
+        }
+        return null;
+    }
+
+    createPlayer(name) {
+        var count = 0;
+        var validName = name;
+        while (this.#players.has(validName)) {
+            if (this.#players.get(validName) == Status.OFFLINE) break;
+            count++;
+            validName = name + count;
+        }
+        this.#players.set(validName, Status.ONLINE);
+        return validName;
+    }
+
+    playerDisconnected(name) {
+        var player = this.#players.get(name);
+        if (player == undefined) return;
+        this.#players.set(name, Status.OFFLINE);
+    }
+}
+
+export default SessionManager;
+</file>
+
+<file path="webSocketHandler.js">
+import RoomHandler, { RoomManager } from "./roomManager.js";
+import express from 'express';
+import http from 'http';
+import { WebSocketServer } from "ws";
+import Message, { ClientAction, ServerAction } from "./message.js";
+import SessionManager from "./sessionManager.js";
+
+export class WebSocketHandler {
+    /** @type {RoomManager} */
+    #roomManager;
+    /** @type {SessionManager} */
+    #sessionManager;
+    /** @type {Map()} */
+    #sessions;
+
+    /**
+     * 
+     * @param {RoomManager} roomManager
+     * @param {SessionManager} sessionManager 
+     */
+    constructor(roomManager, sessionManager) {
+        this.#roomManager = roomManager;
+        this.#sessionManager = sessionManager;
+        this.#sessions = new Map();
+        this.startWS();
+
+        // listens for internal updates to be broadcasted out
+        this.#roomManager.on('broadcast', ({ 
+            message, 
+            players 
+        }) => {
+            var msg = Message.fromJSON(message);
+            msg.players = new Set(players);
+            this.sendMessage(msg);
+        });
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     * @param {WebSocket} ws 
+     */
+    handleClientMessage(message, ws) {
+        var resp = undefined;
+        if (message.command == ClientAction.CLIENT_DISCONNECT) {
+            this.#sessionManager.handleMessage(message);
+            resp = this.#roomManager.handleClientMessage(message);
+        } else if (message.command == ClientAction.SET_NAME) {
+            /** @type {Message} */
+            resp = this.#sessionManager.handleMessage(message);
+            this.#sessions.set(ws, resp.payload);
+        } else if (
+            message.command == ClientAction.JOIN_GAME ||
+            message.command == ClientAction.KICK_PLAYER ||
+            message.command == ClientAction.START_GAME ||
+            message.command == ClientAction.SUBMIT_SYMBOL
+        ) {
+            resp = this.#roomManager.handleClientMessage(message);
+        }
+        if (resp != null || resp != undefined) this.sendMessage(resp);
+    }
+
+    /**
+     * 
+     * @param {Message} message 
+     */
+    sendMessage(message) {
+        const msgString = JSON.stringify(message);
+        for (const [ws, playerName] of this.#sessions) {
+            if (message.players.has(playerName)) {
+                ws.send(msgString);
+            }
+        }
+    }
+
+    /**
+     * Startup the WebSocket on port 4000 and start listening for inbound connections
+     */
+    startWS() {
+        const app = express();
+        const server = http.createServer(app);
+        const wss = new WebSocketServer({ server });
+        
+        wss.on('connection', (ws) => {
+            console.log('Client connected!');
+
+            ws.on('message', (data) => {
+                const msg = Message.fromJSON(data.toString());
+                if (!msg) return; // Guard against null/invalid payloads
+
+                if (this.#sessions.has(ws)) {
+                    msg.players.add(this.#sessions.get(ws));
+                }
+
+                this.handleClientMessage(msg, ws);
+            });
+
+            ws.on('close', () => {
+                const message = new Message(
+                    ClientAction.CLIENT_DISCONNECT,
+                    this.#sessions.get(ws)
+                )
+                message.addPlayer(this.#sessions.get(ws));
+                this.handleClientMessage(message)
+                this.#sessions.delete(ws);
+            });
+        });
+
+        server.listen(4000, () => {
+            console.log('Server running on port 4000');
+        });
+    }
+}
+
+export default WebSocketHandler;
+</file>
+
+</files>

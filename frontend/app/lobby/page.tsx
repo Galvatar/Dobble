@@ -37,8 +37,8 @@ export default function Lobby() {
                 {connected}/{players.length} connected
             </h2>
             <div className="flex flex-col border-2 border-black rounded-xl h-full w-full bg-purple-300 p-3 gap-2">
-                {players.sort((a,b) => b.score - a.score).map((player, idx) => (
-                    <div key={idx}>
+                {players.sort((a,b) => b.score - a.score).map((player) => (
+                    <div key={player.name}>
                         <PlayerCard player={player} isHost={me != null && me.host} onKick={(p) => handleKick(p)} />
                     </div>
                 ))}

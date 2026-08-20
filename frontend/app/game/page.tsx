@@ -1,8 +1,8 @@
 "use client"
 
 import CardView from "../components/card";
-import Card from "../components/card";
 import { useSharedSocket } from "../components/socketContext";
+import { NUM_CARDS } from "../lib/constants";
 import { ClientAction, Message } from "../lib/types";
 
 export default function GameScreen() {
@@ -21,7 +21,7 @@ export default function GameScreen() {
             <div className="flex flex-col gap-1 items-center w-full h-full">
                 <span className="flex w-full justify-between items-center px-3">
                     <h2 className="font-bold text-lg text-black">
-                        {cardsPlayed}/57
+                        {cardsPlayed}/{NUM_CARDS}
                     </h2>
                     <h1 className="font-bold text-lg text-black">
                         Game Pile ▼

@@ -1,6 +1,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Card, Message, Player, ServerAction } from "../lib/types";
+import { Plaster } from "next/font/google";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "ws://localhost:4000"
 
@@ -10,12 +11,12 @@ export function useSocket() {
   const [name, setName] = useState("");
   const [pile, setPile] = useState(0);
   const [hand, setHand] = useState(0);
-  const [deck, setDeck] = useState([] as Card[]);
-  const [players, setPlayers] = useState([] as Player[]);
+  const [deck, setDeck] = useState<Card[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const router = useRouter();
 
-  const player = players.filter((p) => p.name == name).at(0)!;
+  const player = players.find((p) => p.name == name);
   const cardsPlayed = Math.max(Math.max(...players.map((p) => p.card)), pile)+1;
 
   useEffect(() => {
