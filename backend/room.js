@@ -50,11 +50,10 @@ class Room {
         }
         if (resp != null || resp != undefined) {
             if (resp.command == ServerAction.GAME_OVER) {
-                console.log(resp.payload)
                 const scores = JSON.parse(resp.payload);
                 for (const obj of scores) {
-                    const newScore = this.#players.get(obj.player)+obj.score
-                    this.#players.set(obj.player, newScore);
+                    const newScore = this.#players.get(obj.name)+obj.score
+                    this.#players.set(obj.name, newScore);
                 }
                 this.updateLobby();
             }

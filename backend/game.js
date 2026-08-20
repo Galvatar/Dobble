@@ -1,6 +1,6 @@
 import { json } from "node:stream/consumers";
 import Card from "./card.js";
-import { createCards } from "./deckMaker.js";
+import Deck from "./deck.js";
 import Message, { ClientAction, ServerAction } from "./message.js";
 import Player from "./player.js";
 import { CARDS } from "./constants.js";
@@ -11,11 +11,7 @@ class Game {
     #mode;
     /** @type {Map()} */
     #playerParticipants;
-    /** @type {Number} */
-    #top;
-    /** @type {Number} */
-    #pile;
-    /** @type {Card[]} */
+    /** @type {Deck} */
     #deck;
     #handleServerMessage;
 
@@ -29,13 +25,10 @@ class Game {
         this.#mode = mode;
         this.#playerParticipants = new Map();
         this.#handleServerMessage = handleServerMessage;
-        this.#top = 0;
-        this.#pile = 0;
-        var idx = 0;
         for (const player of players) {
             this.#playerParticipants.set(player, new GameParticipant(player));
         }
-        this.#deck = createCards();
+        this.#deck = new Deck();
     }
 
     /**
@@ -43,9 +36,9 @@ class Game {
      * @param {Message} message 
      */
     validateSymbol(message) {
-        const pileCard = this.#deck[this.#pile];
+        const pileCard = this.#deck.getPileCard();
         const playerCardIdx = this.#playerParticipants.get(message.getFirstPlayer()).card
-        const playerCard = this.#deck[playerCardIdx];;
+        const playerCard = this.#deck.getCard(playerCardIdx);
 
         const symbol = Number(message.payload);
 
@@ -81,19 +74,18 @@ class Game {
         const gameParticipant = this.#playerParticipants.get(message.getFirstPlayer());
         if (this.validateSymbol(message)) {
             gameParticipant.score++;
-            this.#top++;
-            const pileTop = this.#pile;
-            this.#pile = this.#mode == 0 ? gameParticipant.card : this.#top;
+            const pileTop = this.#deck.getPile();
+            this.#deck.setPileCard(this.#mode == 0 ? gameParticipant.card : this.#deck.draw());
 
             const pile = new Message(
                 ServerAction.SET_PILE,
-                String(this.#pile)
+                String(this.#deck.getPile())
             )
             for (const [player,participant] of this.#playerParticipants) pile.addPlayer(player);
             this.#handleServerMessage(pile);
 
-            if (this.#top < CARDS) {
-                gameParticipant.card = this.#mode == 0 ? this.#top : pileTop;
+            if (!this.#deck.isGameOver()) {
+                gameParticipant.card = this.#mode == 0 ? this.#deck.draw() : pileTop;
                 const hand = new Message(
                     ServerAction.SET_HAND,
                     String(gameParticipant.card)
@@ -124,7 +116,7 @@ class Game {
         )
         const pile = new Message(
             ServerAction.SET_PILE,
-            String(this.#top++)
+            String(this.#deck.getPile())
         )
         for (const [player,participant] of this.#playerParticipants) {
             deck.addPlayer(player);
@@ -133,7 +125,7 @@ class Game {
         this.#handleServerMessage(deck);
         this.#handleServerMessage(pile);
         for (const [player,participant] of this.#playerParticipants) {
-            const cardIdx = this.#top++;
+            const cardIdx = this.#deck.draw();
             const hand = new Message(
                 ServerAction.SET_HAND,
                 String(cardIdx)
@@ -143,7 +135,6 @@ class Game {
             hand.addPlayer(player);
             this.#handleServerMessage(hand)
         }
-        this.#top--;
     }
 
     updateLobby() {

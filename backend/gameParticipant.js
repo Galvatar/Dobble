@@ -1,6 +1,6 @@
 class GameParticipant {
     constructor (name) {
-        this.player = name;
+        this.name = name;
         this.score = 0;
         this.card = 0;
     }
