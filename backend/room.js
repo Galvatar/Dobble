@@ -48,7 +48,7 @@ class Room {
             this.updateLobby();
             return [...this.#players.keys()]
         }
-        if (resp != null || resp != undefined) {
+        if (resp != null && resp != undefined) {
             if (resp.command == ServerAction.GAME_OVER) {
                 const scores = JSON.parse(resp.payload);
                 for (const obj of scores) {

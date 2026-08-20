@@ -65,10 +65,10 @@ class Deck {
     }
 
     createDeck(order) {
-        var grid = [];
-        var count = 0;
+        let grid = [];
+        let count = 0;
         const size = (order*order)+order+1;
-        var seen = new Array(size).fill(false);
+        let seen = new Array(size).fill(false);
         for (let i = 0; i < order+1; i++) {
             grid[i] = [];
             for (let j = 0; j < order; j++) {
@@ -84,8 +84,8 @@ class Deck {
             }
         }
 
-        var res = [];
-        for (var m = 1; m < order; m++) {
+        let res = [];
+        for (let m = 1; m < order; m++) {
             for (let c = 0; c < order; c++) {
                 var card = []
                 for (let x = 0; x < order; x++) {
@@ -98,10 +98,10 @@ class Deck {
         }
 
         for (let c = 0; c < order; c++) {
-            var card = [];
-            var card1 = [];
+            let card = [];
+            let card1 = [];
             for (let x = 0; x < order; x++) {
-                const y = ((m*x)+c)%order;
+                const y = c%order;
                 card.push(grid[x][y]);
                 card1.push(grid[y][x]);
             }
@@ -110,7 +110,7 @@ class Deck {
             res.push(card);
             res.push(card1);
         }
-        var last = [];
+        let last = [];
         for (let m = 0; m < order; m++) {
             last.push(grid[order][m]);
         }

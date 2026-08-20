@@ -61,7 +61,7 @@ export class RoomManager extends EventEmitter {
         }
         /** @type {Room} */
         const room = this.fetchPlayerRoom(message.getFirstPlayer());
-        if (room != null || room != undefined) {
+        if (room != null && room != undefined) {
             if (message.command == ClientAction.CLIENT_DISCONNECT) {
                 const players = room.handleClientMessage(message);
                 this.handleRoomCleanup(players);

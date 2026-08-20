@@ -60,7 +60,7 @@ class Game {
             return resp;
         } else if (message.command == ClientAction.SUBMIT_SYMBOL) {
             const resp = this.handleSymbolSubmit(message);
-            if (resp != null || resp != undefined) return resp;
+            if (resp != null && resp != undefined) return resp;
         }
     }
 
@@ -92,6 +92,7 @@ class Game {
                 )
                 hand.addPlayer(message.getFirstPlayer());
                 this.updateLobby();
+                this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
                 return hand;
             } else {
                 var scores = [...this.#playerParticipants.values()];
@@ -100,13 +101,14 @@ class Game {
                     JSON.stringify(scores)
                 )
                 for (const [player,participant] of this.#playerParticipants) over.addPlayer(player);
+                this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
                 return over;
             }
         } else {
             gameParticipant.score--;
+            this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
             return null;
         }
-        this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
     }
 
     handleGameStart() {

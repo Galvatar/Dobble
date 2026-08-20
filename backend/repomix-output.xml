@@ -70,7 +70,7 @@ export default Card;
 </file>
 
 <file path="constants.js">
-export const ORDER = 7;
+export const ORDER = 2;
 export const CARDS = (ORDER*ORDER)+ORDER+1;
 </file>
 
@@ -162,7 +162,7 @@ class Deck {
         }
 
         var res = [];
-        for (var m = 1; m < order; m++) {
+        for (let m = 1; m < order; m++) {
             for (let c = 0; c < order; c++) {
                 var card = []
                 for (let x = 0; x < order; x++) {
@@ -178,7 +178,7 @@ class Deck {
             var card = [];
             var card1 = [];
             for (let x = 0; x < order; x++) {
-                const y = ((m*x)+c)%order;
+                const y = c%order;
                 card.push(grid[x][y]);
                 card1.push(grid[y][x]);
             }
@@ -290,7 +290,7 @@ class Game {
             return resp;
         } else if (message.command == ClientAction.SUBMIT_SYMBOL) {
             const resp = this.handleSymbolSubmit(message);
-            if (resp != null || resp != undefined) return resp;
+            if (resp != null && resp != undefined) return resp;
         }
     }
 
@@ -322,6 +322,7 @@ class Game {
                 )
                 hand.addPlayer(message.getFirstPlayer());
                 this.updateLobby();
+                this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
                 return hand;
             } else {
                 var scores = [...this.#playerParticipants.values()];
@@ -330,13 +331,14 @@ class Game {
                     JSON.stringify(scores)
                 )
                 for (const [player,participant] of this.#playerParticipants) over.addPlayer(player);
+                this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
                 return over;
             }
         } else {
             gameParticipant.score--;
+            this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
             return null;
         }
-        this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
     }
 
     handleGameStart() {
@@ -618,7 +620,7 @@ class Room {
             this.updateLobby();
             return [...this.#players.keys()]
         }
-        if (resp != null || resp != undefined) {
+        if (resp != null && resp != undefined) {
             if (resp.command == ServerAction.GAME_OVER) {
                 const scores = JSON.parse(resp.payload);
                 for (const obj of scores) {
@@ -917,7 +919,7 @@ export class WebSocketHandler {
         ) {
             resp = this.#roomManager.handleClientMessage(message);
         }
-        if (resp != null || resp != undefined) this.sendMessage(resp);
+        if (resp != null && resp != undefined) this.sendMessage(resp);
     }
 
     /**

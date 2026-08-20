@@ -57,7 +57,7 @@ export class WebSocketHandler {
         ) {
             resp = this.#roomManager.handleClientMessage(message);
         }
-        if (resp != null || resp != undefined) this.sendMessage(resp);
+        if (resp != null && resp != undefined) this.sendMessage(resp);
     }
 
     /**
