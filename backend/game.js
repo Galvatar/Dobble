@@ -4,16 +4,13 @@ import { createCards } from "./deckMaker.js";
 import Message, { ClientAction, ServerAction } from "./message.js";
 import Player from "./player.js";
 import { CARDS } from "./constants.js";
+import GameParticipant from "./gameParticipant.js";
 
 class Game {
     /** @type {Number} */
     #mode;
-    /** @type {Number[]} */
-    #scores;
-    /** @type {Number[]} */
-    #card;
     /** @type {Map()} */
-    #playerIdx;
+    #playerParticipants;
     /** @type {Number} */
     #top;
     /** @type {Number} */
@@ -30,15 +27,13 @@ class Game {
      */
     constructor(mode, handleServerMessage, players) {
         this.#mode = mode;
-        this.#scores = new Array(players.length).fill(0);
-        this.#card = new Array(players.length).fill(0);
-        this.#playerIdx = new Map();
+        this.#playerParticipants = new Map();
         this.#handleServerMessage = handleServerMessage;
         this.#top = 0;
         this.#pile = 0;
         var idx = 0;
         for (const player of players) {
-            this.#playerIdx.set(player, idx++);
+            this.#playerParticipants.set(player, new GameParticipant(player));
         }
         this.#deck = createCards();
     }
@@ -49,8 +44,8 @@ class Game {
      */
     validateSymbol(message) {
         const pileCard = this.#deck[this.#pile];
-        const playerCardIdx = this.#playerIdx.get(message.getFirstPlayer());
-        const playerCard = this.#deck[this.#card[playerCardIdx]];
+        const playerCardIdx = this.#playerParticipants.get(message.getFirstPlayer()).card
+        const playerCard = this.#deck[playerCardIdx];;
 
         const symbol = Number(message.payload);
 
@@ -68,7 +63,7 @@ class Game {
                 ServerAction.START_GAME,
                 ""
             )
-            for (const [player,idx] of this.#playerIdx) resp.addPlayer(player);
+            for (const [player,participant] of this.#playerParticipants) resp.addPlayer(player);
             return resp;
         } else if (message.command == ClientAction.SUBMIT_SYMBOL) {
             const resp = this.handleSymbolSubmit(message);
@@ -82,49 +77,44 @@ class Game {
      * @returns {Message | null}
      */
     handleSymbolSubmit(message) {
-        const playerIdx = this.#playerIdx.get(message.getFirstPlayer());
+        /** @type {GameParticipant} */
+        const gameParticipant = this.#playerParticipants.get(message.getFirstPlayer());
         if (this.validateSymbol(message)) {
-            this.#scores[playerIdx]++;
+            gameParticipant.score++;
             this.#top++;
             const pileTop = this.#pile;
-            this.#pile = this.#mode == 0 ? this.#card[playerIdx] : this.#top;
+            this.#pile = this.#mode == 0 ? gameParticipant.card : this.#top;
 
             const pile = new Message(
                 ServerAction.SET_PILE,
                 String(this.#pile)
             )
-            for (const [player,idx] of this.#playerIdx) pile.addPlayer(player);
+            for (const [player,participant] of this.#playerParticipants) pile.addPlayer(player);
             this.#handleServerMessage(pile);
 
             if (this.#top < CARDS) {
-                this.#card[playerIdx] = this.#mode == 0 ? this.#top : pileTop;
+                gameParticipant.card = this.#mode == 0 ? this.#top : pileTop;
                 const hand = new Message(
                     ServerAction.SET_HAND,
-                    String(this.#card[playerIdx])
+                    String(gameParticipant.card)
                 )
                 hand.addPlayer(message.getFirstPlayer());
                 this.updateLobby();
                 return hand;
             } else {
-                var scores = [];
-                for (const [player, idx] of this.#playerIdx) {
-                    const obj = {
-                        player: player,
-                        score: this.#scores[idx]
-                    }
-                    scores.push(obj)
-                }
+                var scores = [...this.#playerParticipants.values()];
                 const over = new Message(
                     ServerAction.GAME_OVER,
                     JSON.stringify(scores)
                 )
-                for (const [player, idx] of this.#playerIdx) over.addPlayer(player);
+                for (const [player,participant] of this.#playerParticipants) over.addPlayer(player);
                 return over;
             }
         } else {
-            this.#scores[playerIdx]--;
+            gameParticipant.score--;
             return null;
         }
+        this.#playerParticipants.set(message.getFirstPlayer(), gameParticipant);
     }
 
     handleGameStart() {
@@ -136,19 +126,20 @@ class Game {
             ServerAction.SET_PILE,
             String(this.#top++)
         )
-        for (const [player,idx] of this.#playerIdx) {
+        for (const [player,participant] of this.#playerParticipants) {
             deck.addPlayer(player);
             pile.addPlayer(player);
         }
         this.#handleServerMessage(deck);
         this.#handleServerMessage(pile);
-        for (const [player,idx] of this.#playerIdx) {
+        for (const [player,participant] of this.#playerParticipants) {
             const cardIdx = this.#top++;
             const hand = new Message(
                 ServerAction.SET_HAND,
                 String(cardIdx)
             )
-            this.#card[idx] = cardIdx;
+            participant.card = cardIdx;
+            this.#playerParticipants.set(player, participant);
             hand.addPlayer(player);
             this.#handleServerMessage(hand)
         }
@@ -156,14 +147,7 @@ class Game {
     }
 
     updateLobby() {
-        var players = [];
-        for (const [player,idx] of this.#playerIdx) {
-            const playerDTO = new Player()
-            playerDTO.name = player;
-            playerDTO.card = this.#card[idx];
-            playerDTO.score = this.#scores[idx];
-            players.push(playerDTO);
-        }
+        var players = [...this.#playerParticipants.values()];
         const msg = new Message(
             ServerAction.LOBBY_UPDATE,
             JSON.stringify(players)
