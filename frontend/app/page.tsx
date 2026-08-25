@@ -7,9 +7,11 @@ import { ClientAction, Message } from "./lib/types";
 
 export default function Home() {
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
   const { sendMessage } = useSharedSocket();
 
   function handleSubmit() {
+    setLoading(true);
     const submit = input.trim();
     if (submit.length > 0) {
       const message: Message = {
@@ -41,10 +43,11 @@ export default function Home() {
         className="bg-white font-medium border-2 rounded-md border-black outline-none text-black p-2"
       />
       <button
-        className="bg-purple-300 p-3 font-bold rounded-lg border-2 border-black text-black"
+        disabled={loading}
+        className="bg-purple-300 p-3 font-bold rounded-lg border-2 border-black text-black disabled:opacity-50"
         onClick={() => handleSubmit()}
       >
-        SET NAME
+        {loading ? 'LOADING...' :'SET NAME'}
       </button>
     </div>
   );
