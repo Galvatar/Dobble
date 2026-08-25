@@ -17,8 +17,8 @@ export default function GameScreen() {
     }
 
     return (
-        <div className="flex flex-col h-screen items-center bg-yellow-300 font-sans gap-5">
-            <div className="flex flex-col gap-1 items-center w-full h-full">
+        <div className="flex flex-col h-dvh items-center bg-yellow-300 font-sans gap-5">
+            <div className="flex flex-col flex-1 gap-1 items-center w-full min-h-0">
                 <span className="flex w-full justify-between items-center px-3">
                     <h2 className="font-bold text-lg text-black">
                         {cardsPlayed}/{NUM_CARDS}
@@ -32,7 +32,7 @@ export default function GameScreen() {
                 </span>
                 <CardView card={deck[pile ?? 0]} bottom={false} />
             </div>
-            <div className="flex flex-col gap-1 items-center h-full bg-purple-300 w-full pb-5 border-t-2 border-black">
+            <div className="flex flex-col flex-1 gap-1 items-center min-h-0 bg-purple-300 w-full border-t-2 border-black">
                 <h1 className="font-bold text-lg text-black">
                     Your Hand ▼
                 </h1>

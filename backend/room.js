@@ -28,7 +28,7 @@ class Room {
     handleClientMessage(message) {
         var resp = message;
         if (message.command == ClientAction.JOIN_GAME) {
-            this.#players.set(message.getFirstPlayer(), 0);
+            this.#players.set(message.getFirstPlayer(), this.#players.get(message.getFirstPlayer()) ?? 0);
             this.updateLobby();
         } else if (message.command == ClientAction.KICK_PLAYER) {
             this.#players.delete(message.payload);
